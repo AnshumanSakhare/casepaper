@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Paper Dictation</title>
+<style>
+  :root {
+    --blue: #1a6fc4;
+    --blue-dark: #135693;
+    --green: #1e8e3e;
+    --green-dark: #166b2f;
+    --red: #d93025;
+    --red-dark: #b3241b;
+    --purple: #7b3ff2;
+    --purple-dark: #6230c4;
+    --gray: #5f6368;
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --border: #d7dee8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--bg);
+    color: #202124;
+    font-size: 18px;
+  }
+  header {
+    background: var(--blue);
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 26px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card h2 { margin: 0 0 10px 0; font-size: 22px; }
+  .hint { color: var(--gray); font-size: 16px; margin: 6px 0 12px 0; }
+
+  button {
+    font-size: 20px;
+    padding: 14px 22px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #fff;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #micBtn {
+    width: 100%;
+    font-size: 26px;
+    padding: 22px;
+    background: var(--green);
+    justify-content: center;
+  }
+  #micBtn:hover { background: var(--green-dark); }
+  #micBtn.listening { background: var(--red); animation: pulse 1.5s infinite; }
+  #micBtn.listening:hover { background: var(--red-dark); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(217,48,37,0.5); }
+    70% { box-shadow: 0 0 0 16px rgba(217,48,37,0); }
+    100% { box-shadow: 0 0 0 0 rgba(217,48,37,0); }
+  }
+
+  #status {
+    text-align: center;
+    font-size: 18px;
+    margin-top: 10px;
+    min-height: 26px;
+    font-weight: 600;
+  }
+  #status.on { color: var(--red); }
+  #status.off { color: var(--gray); }
+
+  textarea {
+    width: 100%;
+    min-height: 220px;
+    font-size: 20px;
+    line-height: 1.55;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    resize: vertical;
+    font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: var(--blue); }
+  #interim {
+    color: var(--gray);
+    font-style: italic;
+    min-height: 24px;
+    font-size: 18px;
+    padding: 4px 2px;
+  }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .btn-blue { background: var(--blue); }
+  .btn-blue:hover { background: var(--blue-dark); }
+  .btn-gray { background: var(--gray); }
+  .btn-gray:hover { background: #464a4e; }
+  .btn-purple { background: var(--purple); }
+  .btn-purple:hover { background: var(--purple-dark); }
+  .btn-red-outline {
+    background: #fff; color: var(--red); border: 2px solid var(--red);
+  }
+  .btn-red-outline:hover { background: #fdecea; }
+
+  select, input[type="text"], input[type="password"] {
+    font-size: 18px;
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    width: 100%;
+  }
+  label { font-weight: 600; display: block; margin: 12px 0 4px 0; }
+
+  #aiStatus { margin-top: 10px; font-size: 17px; min-height: 24px; }
+  #aiStatus.error { color: var(--red); font-weight: 600; }
+  #aiStatus.ok { color: var(--green); font-weight: 600; }
+  #aiStatus.working { color: var(--blue); font-weight: 600; }
+
+  details summary {
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--blue);
+    padding: 6px 0;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #202124;
+    color: #fff;
+    padding: 14px 26px;
+    border-radius: 30px;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 99;
+  }
+  .toast.show { opacity: 1; }
+  .warn-box {
+    background: #fef7e0;
+    border: 2px solid #f9ab00;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 18px;
+    display: none;
+  }
+  .lang-row { display: flex; align-items: center; gap: 10px; }
+  .lang-row select { width: auto; font-size: 16px; padding: 6px 10px; }
+  .lang-row label { margin: 0; font-size: 16px; color: #e8f0fe; font-weight: normal; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🩺 Case Paper Dictation</h1>
+  <div class="lang-row">
+    <label for="lang">Accent:</label>
+    <select id="lang">
+      <option value="en-IN" selected>English (India)</option>
+      <option value="en-US">English (US)</option>
+      <option value="en-GB">English (UK)</option>
+    </select>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="warn-box" id="browserWarn">
+    ⚠️ Voice recognition is not supported in this browser. Please open this page in <b>Google Chrome</b> or <b>Microsoft Edge</b>. You can still type, edit, copy and download text.
+  </div>
+
+  <!-- STEP 1: Speak -->
+  <div class="card">
+    <h2>Step 1 — Speak</h2>
+    <p class="hint">Press the big button, then talk normally. Press it again to stop. Say "full stop", "comma" or "new line" for punctuation. Your words appear below and are saved automatically.</p>
+    <button id="micBtn">🎤 Start Speaking</button>
+    <div id="status" class="off">Microphone is off</div>
+  </div>
+
+  <!-- STEP 2: Text -->
+  <div class="card">
+    <h2>Step 2 — Your Text</h2>
+    <p class="hint">You can click inside the box and type to fix or add anything.</p>
+    <div id="interim"></div>
+    <textarea id="transcript" placeholder="Your spoken words will appear here..."></textarea>
+    <div class="btn-row">
+      <button class="btn-blue" id="copyBtn">📋 Copy Text</button>
+      <button class="btn-blue" id="downloadBtn">⬇️ Download Text File</button>
+      <button class="btn-red-outline" id="clearBtn">🗑️ Clear</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: AI -->
+  <div class="card">
+    <h2>Step 3 — Structure with AI <span style="font-weight:normal;font-size:16px;color:var(--gray)">(optional)</span></h2>
+    <p class="hint">The AI arranges your dictation into a neat case paper. If the AI is not working, don't worry — your text above is safe. Just copy or download it.</p>
+    <div class="btn-row">
+      <button class="btn-purple" id="aiBtn">✨ Structure My Case Paper</button>
+    </div>
+    <div id="aiStatus"></div>
+
+    <div id="aiResultWrap" style="display:none; margin-top:14px;">
+      <label for="aiResult">Structured case paper (you can edit this too):</label>
+      <textarea id="aiResult" style="min-height:260px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-blue" id="copyAiBtn">📋 Copy Structured Text</button>
+        <button class="btn-blue" id="downloadAiBtn">⬇️ Download Structured File</button>
+      </div>
+    </div>
+
+    <details style="margin-top:16px;">
+      <summary>⚙️ AI Settings (set up once)</summary>
+      <label for="apiKey">Google Gemini API key <span style="font-weight:normal">(free — get one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>)</span></label>
+      <input type="password" id="apiKey" placeholder="Paste your API key here">
+      <label for="model">Model</label>
+      <select id="model">
+        <option value="gemini-2.5-flash" selected>gemini-2.5-flash (recommended)</option>
+        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (higher free limits)</option>
+        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+        <option value="gemini-flash-latest">gemini-flash-latest</option>
+      </select>
+      <label for="aiPrompt">Instructions for the AI (edit anytime to change the case paper format)</label>
+      <textarea id="aiPrompt" style="min-height:200px; font-size:17px;"></textarea>
+      <div class="btn-row">
+        <button class="btn-gray" id="saveSettingsBtn">💾 Save Settings</button>
+        <button class="btn-gray" id="resetPromptBtn">↩️ Reset Instructions to Default</button>
+      </div>
+    </details>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var DEFAULT_PROMPT =
+"You are a medical scribe assistant. A doctor has dictated notes for a patient case paper. " +
+"Rewrite the dictation below into a clean, well-organized case paper using these sections (skip any section with no information):\n\n" +
+"PATIENT DETAILS (name, age, sex if mentioned)\n" +
+"CHIEF COMPLAINTS\n" +
+"HISTORY OF PRESENT ILLNESS\n" +
+"PAST HISTORY / MEDICAL HISTORY\n" +
+"EXAMINATION FINDINGS / VITALS\n" +
+"PROVISIONAL DIAGNOSIS\n" +
+"INVESTIGATIONS ADVISED\n" +
+"TREATMENT / PRESCRIPTION\n" +
+"ADVICE / FOLLOW-UP\n\n" +
+"Rules: Keep all medical facts exactly as dictated. Do not invent any information. Fix grammar and spelling of medical terms. Output plain text only, no markdown symbols.";
+
+  // ---------- Toast ----------
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2500);
+  }
+
+  // ---------- Storage (safe wrappers) ----------
+  function store(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) {}
+  }
+  function load(key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      return v === null ? fallback : v;
+    } catch (e) { return fallback; }
+  }
+
+  // ---------- Restore saved state ----------
+  $("transcript").value = load("cp_text", "");
+  $("apiKey").value = load("cp_key", "");
+  $("aiPrompt").value = load("cp_prompt", DEFAULT_PROMPT);
+  $("model").value = load("cp_model", "gemini-2.5-flash");
+  $("lang").value = load("cp_lang", "en-IN");
+
+  // Auto-save transcript as user types
+  $("transcript").addEventListener("input", function () {
+    store("cp_text", $("transcript").value);
+  });
+
+  // ---------- Speech recognition ----------
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var recognition = null;
+  var listening = false;        // user's intent: should we be listening?
+  var restartTimer = null;
+  var micStream = null;         // keep mic open while dictating to avoid repeated permission prompts
+
+  if (!SR) {
+    $("browserWarn").style.display = "block";
+    $("micBtn").disabled = true;
+  } else if (location.protocol === "file:") {
+    $("browserWarn").innerHTML = "⚠️ This page is opened directly from a file on the computer, so Chrome keeps re-asking for microphone permission and voice may not work well. Please open the app from its web address (https://...) or http://localhost. Typing, copying and downloading still work.";
+    $("browserWarn").style.display = "block";
+  }
+
+  function releaseMic() {
+    if (micStream) {
+      try {
+        micStream.getTracks().forEach(function (t) { t.stop(); });
+      } catch (e) {}
+      micStream = null;
+    }
+  }
+
+  function spokenPunctuation(text) {
+    return text
+      .replace(/\bfull stop\b/gi, ".")
+      .replace(/\bperiod\b/gi, ".")
+      .replace(/\bcomma\b/gi, ",")
+      .replace(/\bquestion mark\b/gi, "?")
+      .replace(/\bnew line\b/gi, "\n")
+      .replace(/\bnext line\b/gi, "\n")
+      .replace(/\bnew paragraph\b/gi, "\n\n")
+      .replace(/\s+([.,?])/g, "$1");
+  }
+
+  function appendFinal(text) {
+    var box = $("transcript");
+    var cleaned = spokenPunctuation(text.trim());
+    if (!cleaned) return;
+    var existing = box.value;
+    if (existing && !/[\s\n]$/.test(existing)) existing += " ";
+    box.value = existing + cleaned;
+    store("cp_text", box.value);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setListeningUI(on) {
+    var btn = $("micBtn");
+    var st = $("status");
+    if (on) {
+      btn.classList.add("listening");
+      btn.innerHTML = "⏹️ Stop Speaking";
+      st.textContent = "🔴 Listening... speak now";
+      st.className = "on";
+    } else {
+      btn.classList.remove("listening");
+      btn.innerHTML = "🎤 Start Speaking";
+      st.textContent = "Microphone is off";
+      st.className = "off";
+      $("interim").textContent = "";
+    }
+  }
+
+  function createRecognition() {
+    var r = new SR();
+    r.lang = $("lang").value;
+    r.continuous = true;
+    r.interimResults = true;
+
+    r.onresult = function (event) {
+      var interim = "";
+      for (var i = event.resultIndex; i < event.results.length; i++) {
+        var res = event.results[i];
+        if (res.isFinal) {
+          appendFinal(res[0].transcript);
+        } else {
+          interim += res[0].transcript;
+        }
+      }
+      $("interim").textContent = interim;
+    };
+
+    r.onend = function () {
+      // Chrome stops after silence; restart automatically if user still wants to listen
+      if (listening) {
+        clearTimeout(restartTimer);
+        restartTimer = setTimeout(function () {
+          if (listening) {
+            try { r.start(); } catch (e) { /* already started */ }
+          }
+        }, 250);
+      } else {
+        setListeningUI(false);
+      }
+    };
+
+    r.onerror = function (event) {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        listening = false;
+        releaseMic();
+        setListeningUI(false);
+        $("status").textContent = "⚠️ Microphone blocked. Click the 🔒 icon near the address bar, set Microphone to Allow, then reload the page.";
+        $("status").className = "on";
+      } else if (event.error === "network") {
+        listening = false;
+        releaseMic();
+        setListeningUI(false);
+        $("status").textContent = "⚠️ Voice service could not connect. Check the internet connection. (If this page was opened as a file, it must be opened from a web address instead.)";
+        $("status").className = "on";
+      }
+      // "no-speech" and "aborted" are normal; onend will handle restart
+    };
+
+    return r;
+  }
+
+  function startRecognition() {
+    listening = true;
+    recognition = createRecognition();
+    try {
+      recognition.start();
+      setListeningUI(true);
+    } catch (e) {
+      listening = false;
+      releaseMic();
+      setListeningUI(false);
+      toast("Could not start microphone. Please try again.");
+    }
+  }
+
+  $("micBtn").addEventListener("click", function () {
+    if (!SR) return;
+    if (listening) {
+      listening = false;
+      clearTimeout(restartTimer);
+      if (recognition) { try { recognition.stop(); } catch (e) {} }
+      releaseMic();
+      setListeningUI(false);
+      return;
+    }
+    // Grab the mic ONCE and hold it while dictating. This makes Chrome remember
+    // the permission for the whole session and stops repeated permission pop-ups.
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      $("status").textContent = "Please click “Allow” if Chrome asks for the microphone...";
+      $("status").className = "on";
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        micStream = stream;
+        startRecognition();
+      }, function () {
+        setListeningUI(false);
+        $("status").textContent = "⚠️ Microphone blocked. Click the 🔒 icon near the address bar, set Microphone to Allow, then reload the page.";
+        $("status").className = "on";
+      });
+    } else {
+      startRecognition();
+    }
+  });
+
+  $("lang").addEventListener("change", function () {
+    store("cp_lang", $("lang").value);
+    if (listening) {
+      // restart with new language
+      listening = false;
+      if (recognition) { try { recognition.stop(); } catch (e) {} }
+      setTimeout(function () { $("micBtn").click(); }, 400);
+    }
+  });
+
+  // ---------- Copy / Download / Clear ----------
+  function copyText(text, okMsg) {
+    if (!text) { toast("Nothing to copy yet."); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast(okMsg);
+      }, function () { fallbackCopy(text, okMsg); });
+    } else {
+      fallbackCopy(text, okMsg);
+    }
+  }
+  function fallbackCopy(text, okMsg) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); toast(okMsg); }
+    catch (e) { toast("Copy failed — please select the text and press Ctrl+C."); }
+    document.body.removeChild(ta);
+  }
+
+  function downloadText(text, prefix) {
+    if (!text) { toast("Nothing to download yet."); return; }
+    var d = new Date();
+    var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    var name = prefix + "_" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "_" + pad(d.getHours()) + "-" + pad(d.getMinutes()) + ".txt";
+    var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    toast("Downloading " + name);
+  }
+
+  $("copyBtn").addEventListener("click", function () {
+    copyText($("transcript").value, "Text copied! You can paste it anywhere.");
+  });
+  $("downloadBtn").addEventListener("click", function () {
+    downloadText($("transcript").value, "case_notes");
+  });
+  $("clearBtn").addEventListener("click", function () {
+    if (!$("transcript").value) return;
+    if (confirm("Clear all the text? This cannot be undone.")) {
+      $("transcript").value = "";
+      store("cp_text", "");
+      toast("Text cleared.");
+    }
+  });
+  $("copyAiBtn").addEventListener("click", function () {
+    copyText($("aiResult").value, "Structured text copied!");
+  });
+  $("downloadAiBtn").addEventListener("click", function () {
+    downloadText($("aiResult").value, "case_paper");
+  });
+
+  // ---------- Settings ----------
+  $("saveSettingsBtn").addEventListener("click", function () {
+    store("cp_key", $("apiKey").value.trim());
+    store("cp_prompt", $("aiPrompt").value);
+    store("cp_model", $("model").value);
+    toast("Settings saved on this computer.");
+  });
+  $("resetPromptBtn").addEventListener("click", function () {
+    $("aiPrompt").value = DEFAULT_PROMPT;
+    store("cp_prompt", DEFAULT_PROMPT);
+    toast("Instructions reset to default.");
+  });
+
+  // ---------- Gemini AI ----------
+  function setAiStatus(msg, cls) {
+    var el = $("aiStatus");
+    el.textContent = msg;
+    el.className = cls || "";
+  }
+
+  $("aiBtn").addEventListener("click", function () {
+    var text = $("transcript").value.trim();
+    if (!text) {
+      setAiStatus("⚠️ There is no text yet. Please dictate or type something first.", "error");
+      return;
+    }
+    var key = ($("apiKey").value || "").trim();
+    if (!key) {
+      setAiStatus("⚠️ No API key set. Open “AI Settings” below, paste your free Gemini key, and press Save. Your text above is safe — you can still copy or download it.", "error");
+      return;
+    }
+    store("cp_key", key);
+
+    var model = $("model").value;
+    var prompt = $("aiPrompt").value || DEFAULT_PROMPT;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
+
+    $("aiBtn").disabled = true;
+    setAiStatus("⏳ AI is arranging your case paper... please wait.", "working");
+
+    var timeoutCtrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timer = timeoutCtrl ? setTimeout(function () { timeoutCtrl.abort(); }, 60000) : null;
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": key
+      },
+      signal: timeoutCtrl ? timeoutCtrl.signal : undefined,
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt + "\n\n--- DICTATED NOTES ---\n" + text }] }],
+        generationConfig: { temperature: 0.2 }
+      })
+    })
+    .then(function (resp) {
+      return resp.json().catch(function () { return {}; }).then(function (data) {
+        return { ok: resp.ok, status: resp.status, data: data };
+      });
+    })
+    .then(function (r) {
+      if (timer) clearTimeout(timer);
+      if (!r.ok) {
+        var msg = (r.data && r.data.error && r.data.error.message) ? r.data.error.message : "";
+        if (r.status === 400 && /API key/i.test(msg)) {
+          throw new Error("The API key looks invalid. Please check it in AI Settings.");
+        } else if (r.status === 429) {
+          throw new Error("The free AI limit is used up for now. Please try again later — or copy your text above and structure it manually.");
+        } else if (r.status === 404) {
+          throw new Error("This model is not available. Try a different model in AI Settings.");
+        }
+        throw new Error(msg || ("AI request failed (error " + r.status + ")."));
+      }
+      var out = "";
+      try {
+        var parts = r.data.candidates[0].content.parts;
+        for (var i = 0; i < parts.length; i++) {
+          if (parts[i].text) out += parts[i].text;
+        }
+      } catch (e) {}
+      if (!out) throw new Error("The AI returned an empty answer. Please try again.");
+      $("aiResult").value = out.trim();
+      $("aiResultWrap").style.display = "block";
+      setAiStatus("✅ Done! Review the structured case paper below. Your original text above is untouched.", "ok");
+      $("aiResultWrap").scrollIntoView({ behavior: "smooth", block: "start" });
+    })
+    .catch(function (err) {
+      if (timer) clearTimeout(timer);
+      var m = (err && err.name === "AbortError")
+        ? "The AI took too long to respond. Please try again."
+        : (err && err.message ? err.message : "The AI could not be reached.");
+      setAiStatus("❌ " + m + "  👉 Your text is safe — use “Copy Text” or “Download Text File” above.", "error");
+    })
+    .then(function () {
+      $("aiBtn").disabled = false;
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
